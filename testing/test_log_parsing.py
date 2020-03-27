@@ -27,6 +27,6 @@ def test_unsupported_raise(filepath: Path, should_raise: bool) -> None:
     """Test that an error is appropriately raised for unsupported file types."""
     if should_raise:
         with pytest.raises(UnsupportedLogFile):
-            iDAQ.parse_log_file(filepath)
+            _ = iDAQ(filepath)
     else:
-        iDAQ.parse_log_file(filepath)
+        _ = iDAQ(filepath)

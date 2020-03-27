@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+import typing as t
 from datetime import datetime
 from enum import Enum, auto
 from fnmatch import fnmatch
@@ -30,11 +32,49 @@ class iDAQ:  # noqa: N801
         LogFileType.MATLAB: ("*.mat",),
     }
 
-    def __init__(self, data_filepath: Path):
+    # Set up default path to the logdecoder executable. If on windows we'll need `*.exe`
+    logdecoder_base_path = Path("./logdecoder/")
+    if sys.platform == "win32":
+        logdecoder_path = logdecoder_base_path / "logdecoder.exe"
+    else:
+        logdecoder_path = logdecoder_base_path / "logdecoder"
+
+    def __init__(self, data_filepath: Path, logdecoder_path_override: t.Optional[Path] = None):
         self.data_filepath = data_filepath
         self.analysis_date = datetime.now()
 
-        self.raw_data = self.parse_log_file(self.data_filepath)
+        self.raw_data = self.parse_log_file()
+
+    def check_for_logdecoder(self) -> bool:
+        """Check that the logdecoder executable is available in the configured location."""
+        raise NotImplementedError
+
+    def parse_log_file(self) -> pd.DataFrame:
+        """
+        Parse the instance's log file into a DataFrame.
+
+        Parsing pipelines are determined by the file's name, as binned by `iDAQ.log_name_patterns`,
+        raw log files are passed to Wamore's logdecoder executable to be converted into a CSV before
+        being parsed into a DataFrame.
+        """
+        # TODO: Check that file exists
+        log_type = self.classify_log_type(self.data_filepath)
+        if log_type == LogFileType.UNSUPPORTED:
+            raise UnsupportedLogFile(
+                f"'{self.data_filepath.name}' does not match a supported file name pattern. "
+                "A list of supported naming patterns is provided in the README."
+            )
+
+        if log_type == LogFileType.MATLAB:
+            raise UnsupportedLogFile("Support for MATLAB files is currently not implemented.")
+
+        if log_type == LogFileType.RAW:
+            # TODO: Check for logdecoder
+            # TODO: Pass log file to logdecoder & replace filepath with output file
+            raise NotImplementedError
+
+        # TODO: Parse CSV file
+        raise NotImplementedError
 
     @classmethod
     def classify_log_type(cls, filepath: Path) -> LogFileType:
@@ -59,30 +99,3 @@ class iDAQ:  # noqa: N801
                     return log_type
         else:
             return LogFileType.UNSUPPORTED
-
-    @classmethod
-    def parse_log_file(cls, filepath: Path) -> pd.DataFrame:
-        """
-        Parse the provided log file into a DataFrame.
-
-        Parsing pipelines are determined by the file's name, as binned by `iDAQ.log_name_patterns`,
-        raw log files are passed to Wamore's logdecoder executable to be converted into a CSV before
-        being parsed into a DataFrame.
-        """
-        log_type = cls.classify_log_type(filepath)
-        if log_type == LogFileType.UNSUPPORTED:
-            raise UnsupportedLogFile(
-                f"'{filepath.name}' does not match a supported file name pattern. "
-                "A list of supported naming patterns is provided in the README."
-            )
-
-        if log_type == LogFileType.MATLAB:
-            raise UnsupportedLogFile("Support for MATLAB files is currently not implemented.")
-
-        if log_type == LogFileType.RAW:
-            # TODO: Check for logdecoder
-            # TODO: Pass log file to logdecoder & replace filepath with output file
-            raise NotImplementedError
-
-        # TODO: Parse CSV file
-        raise NotImplementedError
