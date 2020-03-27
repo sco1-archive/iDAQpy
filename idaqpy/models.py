@@ -8,7 +8,7 @@ from fnmatch import fnmatch
 from pathlib import Path
 
 import pandas as pd
-from idaqpy import UnsupportedLogFile
+from idaqpy import LogdecoderNotFound, UnsupportedLogFile
 
 
 class LogFileType(Enum):
@@ -43,11 +43,14 @@ class iDAQ:  # noqa: N801
         self.data_filepath = data_filepath
         self.analysis_date = datetime.now()
 
+        if logdecoder_path_override:
+            self.logdecoder_path = logdecoder_path_override
+
         self.raw_data = self.parse_log_file()
 
     def check_for_logdecoder(self) -> bool:
         """Check that the logdecoder executable is available in the configured location."""
-        raise NotImplementedError
+        return self.logdecoder_path.exists()
 
     def parse_log_file(self) -> pd.DataFrame:
         """
@@ -57,7 +60,9 @@ class iDAQ:  # noqa: N801
         raw log files are passed to Wamore's logdecoder executable to be converted into a CSV before
         being parsed into a DataFrame.
         """
-        # TODO: Check that file exists
+        if not self.data_filepath.exists():
+            raise ValueError(f"Log file could not be found: '{self.data_filepath}'")
+
         log_type = self.classify_log_type(self.data_filepath)
         if log_type == LogFileType.UNSUPPORTED:
             raise UnsupportedLogFile(
@@ -69,7 +74,11 @@ class iDAQ:  # noqa: N801
             raise UnsupportedLogFile("Support for MATLAB files is currently not implemented.")
 
         if log_type == LogFileType.RAW:
-            # TODO: Check for logdecoder
+            if not self.check_for_logdecoder():
+                raise LogdecoderNotFound(
+                    f"logdecoder could not be found. Expected at: '{self.logdecoder_path}'"
+                )
+
             # TODO: Pass log file to logdecoder & replace filepath with output file
             raise NotImplementedError
 
