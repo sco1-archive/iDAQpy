@@ -1,0 +1,5 @@
+# This directory is a placeholder for Wamore's log decoder, which is not included with this repository.
+
+# Ignore everything in this directory except this file
+*
+!.gitignore
