@@ -123,4 +123,4 @@ class iDAQ:  # noqa: N801
         p.check_returncode()
 
         # If successful, replace the original log filepath with the decoded filepath
-        return data_filepath.with_name(f"{data_filepath.name()}.csv")
+        return data_filepath.with_name(f"{data_filepath.name}.csv")

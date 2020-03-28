@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 import pytest_check as check
-from idaqpy import UnsupportedLogFile
+from idaqpy import LogdecoderNotFound, UnsupportedLogFile
 from idaqpy.models import iDAQ
 from pytest_mock.plugin import MockFixture
 
@@ -69,3 +69,42 @@ def test_os_specific_logdecoder_path(mocker: MockFixture) -> None:
     for platform in ("darwin", "linux"):
         mocker.patch("sys.platform", platform)
         check.equal(test_idaq.logdecoder_path.suffix, "", msg=failure_msg.format(platform=platform))
+
+
+def test_logdecoder_detection(tmp_path: Path, mocker: MockFixture) -> None:
+    """Test logdecoder presence detection & path override."""
+    # Patch to a single OS for testing
+    mocker.patch("sys.platform", "darwin")
+    logdecoder_path = tmp_path / "logdecoder"
+
+    # Mock the data parsing methods since they're not relevant to this test
+    mocker.patch("idaqpy.models.iDAQ.parse_log_file")
+
+    # Check absent logdecoder
+    with pytest.raises(LogdecoderNotFound):
+        iDAQ.parse_raw_log(logdecoder_path, Path())
+
+    # Patch subprocess.run to succeed
+    mocker.patch("subprocess.run")
+    mocker.patch("subprocess.CompletedProcess.check_returncode")
+
+    # Check logdecoder present
+    logdecoder_path.write_text("")
+    test_log_file = tmp_path / "LOG.001"
+    decoded_filepath = iDAQ.parse_raw_log(logdecoder_path, test_log_file)
+    check.equal(decoded_filepath.suffix, ".csv")
+
+    # Check logdecoder path override
+    overridden_logdecoder = tmp_path / "otherlogdecoder"
+    test_idaq = iDAQ(test_log_file, overridden_logdecoder)
+    check.equal(test_idaq.logdecoder_path, overridden_logdecoder)
+
+
+def test_missing_data_file_raises(tmp_path: Path, mocker: MockFixture) -> None:
+    """Test that an error is raised before attempting to parse a missing log file."""
+    # Mock the data parsing methods since they're not relevant to this test
+    mocker.patch("idaqpy.models.iDAQ.parse_log_csv")
+
+    test_log_file = tmp_path / "test.csv"
+    with pytest.raises(ValueError):
+        _ = iDAQ(test_log_file)
