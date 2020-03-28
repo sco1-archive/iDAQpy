@@ -2,6 +2,7 @@ import typing as t
 from pathlib import Path
 
 import pytest
+import pytest_check as check
 from idaqpy import UnsupportedLogFile
 from idaqpy.models import iDAQ
 from pytest_mock.plugin import MockFixture
@@ -46,3 +47,25 @@ def test_unsupported_raise(
             _ = iDAQ(tempfile)
     else:
         _ = iDAQ(tempfile)
+
+
+def test_os_specific_logdecoder_path(mocker: MockFixture) -> None:
+    """
+    Test that the path to the logdecoder is appropriately set per OS.
+
+    On Windows, the logdecoder will need an `*.exe` extension, all others will not.
+    """
+    # Mock the log parsing chain since we're only concerned about the log
+    mocker.patch("idaqpy.models.iDAQ.parse_log_file")
+    test_idaq = iDAQ(Path())
+
+    failure_msg = "logdecoder path test failed for platform '{platform}'"
+    for platform in ("win32", "cygwin"):
+        mocker.patch("sys.platform", platform)
+        check.equal(
+            test_idaq.logdecoder_path.suffix, ".exe", msg=failure_msg.format(platform=platform)
+        )
+
+    for platform in ("darwin", "linux"):
+        mocker.patch("sys.platform", platform)
+        check.equal(test_idaq.logdecoder_path.suffix, "", msg=failure_msg.format(platform=platform))

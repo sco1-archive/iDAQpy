@@ -33,21 +33,26 @@ class iDAQ:  # noqa: N801
         LogFileType.MATLAB: ("*.mat",),
     }
 
-    # Set up default path to the logdecoder executable. If on windows we'll need `*.exe`
-    logdecoder_base_path = Path("./logdecoder/")
-    if sys.platform == "win32":
-        logdecoder_path = logdecoder_base_path / "logdecoder.exe"
-    else:
-        logdecoder_path = logdecoder_base_path / "logdecoder"
-
     def __init__(self, data_filepath: Path, logdecoder_path_override: t.Optional[Path] = None):
         self.data_filepath = data_filepath
+        self._logdecoder_path_override = logdecoder_path_override
+
         self.analysis_date = datetime.now()
-
-        if logdecoder_path_override:
-            self.logdecoder_path = logdecoder_path_override
-
         self.raw_data = self.parse_log_file()
+
+    @property
+    def logdecoder_path(self) -> Path:
+        """Provide OS-specific path to logdecoder executable, or the overridden path if present."""
+        if self._logdecoder_path_override:
+            return self._logdecoder_path_override
+
+        # Set up default path to the logdecoder executable. If on Windows we'll need `*.exe`
+        logdecoder_base_path = Path("./logdecoder/")
+        platform = sys.platform
+        if platform in ("win32", "cygwin"):
+            return logdecoder_base_path / "logdecoder.exe"
+        else:
+            return logdecoder_base_path / "logdecoder"
 
     def parse_log_file(self) -> pd.DataFrame:
         """
