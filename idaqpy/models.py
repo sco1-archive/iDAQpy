@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 import sys
 import typing as t
 from datetime import datetime
@@ -48,10 +49,6 @@ class iDAQ:  # noqa: N801
 
         self.raw_data = self.parse_log_file()
 
-    def check_for_logdecoder(self) -> bool:
-        """Check that the logdecoder executable is available in the configured location."""
-        return self.logdecoder_path.exists()
-
     def parse_log_file(self) -> pd.DataFrame:
         """
         Parse the instance's log file into a DataFrame.
@@ -74,14 +71,13 @@ class iDAQ:  # noqa: N801
             raise UnsupportedLogFile("Support for MATLAB files is currently not implemented.")
 
         if log_type == LogFileType.RAW:
-            if not self.check_for_logdecoder():
-                raise LogdecoderNotFound(
-                    f"logdecoder could not be found. Expected at: '{self.logdecoder_path}'"
-                )
+            self.data_filepath = self.parse_raw_log(self.logdecoder_path, self.data_filepath)
 
-            # TODO: Pass log file to logdecoder & replace filepath with output file
-            raise NotImplementedError
+        # If we've gotten here, have a CSV to parse
+        self.parse_log_csv()
 
+    def parse_log_csv(self) -> None:
+        """Parse a decoded CSV log file into a DataFrame."""
         # TODO: Parse CSV file
         raise NotImplementedError
 
@@ -108,3 +104,18 @@ class iDAQ:  # noqa: N801
                     return log_type
         else:
             return LogFileType.UNSUPPORTED
+
+    @staticmethod
+    def parse_raw_log(logdecoder_path: Path, data_filepath: Path) -> Path:
+        """Decode raw binary log file to CSV using the provided external log decoder executable."""
+        if not logdecoder_path.exists():
+            raise LogdecoderNotFound(
+                f"logdecoder could not be found. Expected at: '{logdecoder_path}'"
+            )
+
+        # Pass log file to logdecoder, which will output a CSV to the same directory
+        p = subprocess.run([logdecoder_path, data_filepath.absolute()])
+        p.check_returncode()
+
+        # If successful, replace the original log filepath with the decoded filepath
+        return data_filepath.with_name(f"{data_filepath.name()}.csv")

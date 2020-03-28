@@ -4,29 +4,45 @@ from pathlib import Path
 import pytest
 from idaqpy import UnsupportedLogFile
 from idaqpy.models import iDAQ
+from pytest_mock.plugin import MockFixture
 
 
 class UnsupportedFileTestCase(t.NamedTuple):
-    """Represent unsupported file test cases & whether the filename should yield an error."""
+    """Represent unsupported file test cases & whether the file name should yield an error."""
 
-    filepath: Path
+    file_name: str
     should_raise: bool
 
 
 UNSUPPORTED_FILE_CASES = (
-    UnsupportedFileTestCase(filepath=Path("file.exe"), should_raise=True),
-    UnsupportedFileTestCase(filepath=Path("file.mat"), should_raise=True),
-    UnsupportedFileTestCase(filepath=Path("LOG.001"), should_raise=False),
-    UnsupportedFileTestCase(filepath=Path("file.idaq"), should_raise=False),
-    UnsupportedFileTestCase(filepath=Path("file.csv"), should_raise=False),
+    UnsupportedFileTestCase(file_name="file.exe", should_raise=True),
+    UnsupportedFileTestCase(file_name="file.mat", should_raise=True),
+    UnsupportedFileTestCase(file_name="LOG.001", should_raise=False),
+    UnsupportedFileTestCase(file_name="file.idaq", should_raise=False),
+    UnsupportedFileTestCase(file_name="file.csv", should_raise=False),
 )
 
 
-@pytest.mark.parametrize("filepath, should_raise", UNSUPPORTED_FILE_CASES)
-def test_unsupported_raise(filepath: Path, should_raise: bool) -> None:
-    """Test that an error is appropriately raised for unsupported file types."""
+@pytest.mark.parametrize("file_name, should_raise", UNSUPPORTED_FILE_CASES)
+def test_unsupported_raise(
+    file_name: str, should_raise: bool, tmp_path: Path, mocker: MockFixture
+) -> None:
+    """
+    Test that an error is appropriately raised for unsupported file types.
+
+    A temporary directory is provided by Pytest as a fixture to create a dummy file to bypass
+    log existence check.
+    """
+    # Create a temporary dummy file
+    tempfile = tmp_path / file_name
+    tempfile.write_text("")
+
+    # Mock the data parsing methods since they're not relevant to this test
+    mocker.patch("idaqpy.models.iDAQ.parse_raw_log")
+    mocker.patch("idaqpy.models.iDAQ.parse_log_csv")
+
     if should_raise:
         with pytest.raises(UnsupportedLogFile):
-            _ = iDAQ(filepath)
+            _ = iDAQ(tempfile)
     else:
-        _ = iDAQ(filepath)
+        _ = iDAQ(tempfile)
