@@ -73,32 +73,39 @@ def test_os_specific_logdecoder_path(mocker: MockFixture) -> None:
 
 
 def test_logdecoder_detection(tmp_path: Path, mocker: MockFixture) -> None:
-    """Test logdecoder presence detection & path override."""
+    """Test missing logdecoder detection & logdecoder path override."""
     # Patch to a single OS for testing
     mocker.patch("sys.platform", "darwin")
     logdecoder_path = tmp_path / "logdecoder"
-
-    # Mock the data parsing methods since they're not relevant to this test
-    mocker.patch("idaqpy.models.iDAQ.parse_log_file")
 
     # Check absent logdecoder
     with pytest.raises(LogdecoderNotFound):
         decode_raw_log(logdecoder_path, Path())
 
+    # Mock the data parsing methods since they're not relevant to this test
+    mocker.patch("idaqpy.models.iDAQ.parse_log_file")
+
+    # Check logdecoder path override
+    test_log_file = tmp_path / "LOG.001"
+    overridden_logdecoder = tmp_path / "otherlogdecoder"
+    test_idaq = iDAQ(test_log_file, overridden_logdecoder)
+    check.equal(test_idaq.logdecoder_path, overridden_logdecoder)
+
+
+def test_raw_log_decoding(tmp_path: Path, mocker: MockFixture) -> None:
+    """Test that successful raw log file decoding provides the appropriate path to new log file."""
+    # Patch to a single OS for testing
+    mocker.patch("sys.platform", "darwin")
+    logdecoder_path = tmp_path / "logdecoder"
+
     # Patch subprocess.run to succeed
     mocker.patch("subprocess.run")
     mocker.patch("subprocess.CompletedProcess.check_returncode")
 
-    # Check logdecoder present
     logdecoder_path.write_text("")
     test_log_file = tmp_path / "LOG.001"
     decoded_filepath = decode_raw_log(logdecoder_path, test_log_file)
     check.equal(decoded_filepath.suffix, ".csv")
-
-    # Check logdecoder path override
-    overridden_logdecoder = tmp_path / "otherlogdecoder"
-    test_idaq = iDAQ(test_log_file, overridden_logdecoder)
-    check.equal(test_idaq.logdecoder_path, overridden_logdecoder)
 
 
 def test_missing_data_file_raises(tmp_path: Path, mocker: MockFixture) -> None:
