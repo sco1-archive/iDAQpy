@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import typer
+from idaqpy.utils import prompt_for_dir, prompt_for_file
 
 
 idaq_cli = typer.Typer()
@@ -10,9 +11,9 @@ idaq_cli = typer.Typer()
 def single(log_filepath: Path = typer.Option(None)) -> None:
     """Process the provided log file."""
     if log_filepath is None:
-        print(f"No path provided, prompt the user to select")
-        return
+        log_filepath = prompt_for_file()
 
+    # TODO: Check for file existence
     print(f"Log path: {log_filepath}")
 
 
@@ -24,9 +25,10 @@ def batch(log_dir: Path = typer.Option(None), recurse: bool = False) -> None:
     Recursive processing may be optionally specified (Default: False).
     """
     if log_dir is None:
-        print(f"No path provided, prompt the user to select")
-        return
+        log_dir = prompt_for_dir()
 
+    # TODO: Check for directory existence
+    # TODO: Parse directory for files
     print(f"Log directory: {log_dir}, Recurse: {recurse}")
 
 
