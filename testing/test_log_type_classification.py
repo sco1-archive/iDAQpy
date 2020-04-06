@@ -15,6 +15,7 @@ TEST_CASES = {
         "FILE.iDAQ",
         "file.idaq",
         "fIlE.IdAq",
+        "LOG.001.iDAQ",
     ),
     LogFileType.DECODED: (
         "LOG.001.csv",
