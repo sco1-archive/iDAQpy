@@ -16,7 +16,7 @@ def single(
     if log_filepath is None:
         log_filepath = prompt_for_file()
 
-    process_log_files([log_filepath])
+    process_log_files([log_filepath])  # Encapsulate in list for simplicity
 
 
 @idaq_cli.command()
@@ -41,7 +41,7 @@ def batch(
 def main(ctx: typer.Context) -> None:
     """Python Toolkit for the Wamore iDAQ."""
     # Provide a callback for the base invocation to display the help text & exit.
-    pass
+    pass  # pragma: no cover
 
 
 def process_log_files(log_files: t.List[Path]) -> None:
@@ -51,5 +51,5 @@ def process_log_files(log_files: t.List[Path]) -> None:
         typer.echo(f"Done!")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     idaq_cli()
