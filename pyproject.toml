@@ -21,11 +21,15 @@ classifiers = [
 ]
 include = ["CHANGELOG.md"]
 
+[tool.poetry.scripts]
+idaqpy = "idaqpy.interface:idaq_cli"
+
 [tool.poetry.dependencies]
 python = "^3.8"
 click = "^7.1"
 numpy = "^1.18"
 pandas = "^1.0"
+typer = "^0.1"
 
 [tool.poetry.dev-dependencies]
 black = {version = "^19.10b0"}
@@ -35,12 +39,12 @@ flake8-docstrings = "^1.5"
 flake8-import-order = "^0.18"
 flake8-tidy-imports = "^4.0"
 flake8-todo = "^0.7"
-pep8-naming = "^0.9"
+pep8-naming = "^0.10"
 pre-commit = "^2.1"
 pytest = "^5.3"
 pytest-check = "^0.3"
 pytest-cov = "^2.8"
-pytest-mock = "^2.0"
+pytest-mock = "^3.0"
 
 [tool.black]
 line-length = 100
