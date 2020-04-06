@@ -5,6 +5,7 @@ import pytest
 import pytest_check as check
 from idaqpy import LogdecoderNotFound, UnsupportedLogFile
 from idaqpy.models import iDAQ
+from idaqpy.parsing import decode_raw_log
 from pytest_mock.plugin import MockFixture
 
 
@@ -39,7 +40,7 @@ def test_unsupported_raise(
     tempfile.write_text("")
 
     # Mock the data parsing methods since they're not relevant to this test
-    mocker.patch("idaqpy.models.iDAQ.parse_raw_log")
+    mocker.patch("idaqpy.parsing.decode_raw_log")
     mocker.patch("idaqpy.models.iDAQ.parse_log_csv")
 
     if should_raise:
@@ -82,7 +83,7 @@ def test_logdecoder_detection(tmp_path: Path, mocker: MockFixture) -> None:
 
     # Check absent logdecoder
     with pytest.raises(LogdecoderNotFound):
-        iDAQ.parse_raw_log(logdecoder_path, Path())
+        decode_raw_log(logdecoder_path, Path())
 
     # Patch subprocess.run to succeed
     mocker.patch("subprocess.run")
@@ -91,7 +92,7 @@ def test_logdecoder_detection(tmp_path: Path, mocker: MockFixture) -> None:
     # Check logdecoder present
     logdecoder_path.write_text("")
     test_log_file = tmp_path / "LOG.001"
-    decoded_filepath = iDAQ.parse_raw_log(logdecoder_path, test_log_file)
+    decoded_filepath = decode_raw_log(logdecoder_path, test_log_file)
     check.equal(decoded_filepath.suffix, ".csv")
 
     # Check logdecoder path override

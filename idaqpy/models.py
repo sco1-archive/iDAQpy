@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import subprocess
 import sys
 import typing as t
 from datetime import datetime
@@ -9,7 +8,8 @@ from fnmatch import fnmatch
 from pathlib import Path
 
 import pandas as pd
-from idaqpy import LogdecoderNotFound, UnsupportedLogFile
+from idaqpy import UnsupportedLogFile
+from idaqpy.parsing import decode_raw_log, parse_csv
 
 
 class LogFileType(Enum):
@@ -81,15 +81,14 @@ class iDAQ:  # noqa: N801
             raise UnsupportedLogFile("Support for MATLAB files is currently not implemented.")
 
         if log_type == LogFileType.RAW:
-            self.data_filepath = self.parse_raw_log(self.logdecoder_path, self.data_filepath)
+            self.data_filepath = decode_raw_log(self.logdecoder_path, self.data_filepath)
 
         # If we've gotten here, have a CSV to parse
-        self.parse_log_csv()
+        return self.parse_log_csv()
 
-    def parse_log_csv(self) -> None:
+    def parse_log_csv(self) -> pd.DataFrame:
         """Parse a decoded CSV log file into a DataFrame."""
-        # TODO: Parse CSV file
-        raise NotImplementedError
+        return parse_csv(self.data_filepath)
 
     @classmethod
     def classify_log_type(cls, filepath: Path) -> LogFileType:
@@ -114,18 +113,3 @@ class iDAQ:  # noqa: N801
                     return log_type
         else:
             return LogFileType.UNSUPPORTED
-
-    @staticmethod
-    def parse_raw_log(logdecoder_path: Path, data_filepath: Path) -> Path:
-        """Decode raw binary log file to CSV using the provided external log decoder executable."""
-        if not logdecoder_path.exists():
-            raise LogdecoderNotFound(
-                f"logdecoder could not be found. Expected at: '{logdecoder_path}'"
-            )
-
-        # Pass log file to logdecoder, which will output a CSV to the same directory
-        p = subprocess.run([logdecoder_path, data_filepath.absolute()])
-        p.check_returncode()
-
-        # If successful, replace the original log filepath with the decoded filepath
-        return data_filepath.with_name(f"{data_filepath.name}.csv")
