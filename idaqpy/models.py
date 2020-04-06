@@ -33,6 +33,11 @@ class iDAQ:  # noqa: N801
         LogFileType.MATLAB: ("*.mat",),
     }
 
+    # Expand patterns for private use by utility functions
+    _all_supported_patterns = []
+    for patterns in log_name_patterns.values():
+        _all_supported_patterns.extend(patterns)
+
     def __init__(self, data_filepath: Path, logdecoder_path_override: t.Optional[Path] = None):
         self.data_filepath = data_filepath
         self._logdecoder_path_override = logdecoder_path_override
