@@ -26,6 +26,30 @@ def test_base_invokes_help() -> None:
     is_help(result.stdout)
 
 
+def test_single_file_ui_prompt(mocker: MockFixture) -> None:
+    """Test that a bare invocation of the single file processing prompts user for file selection."""
+    # Mock TkInter & processing flow so we can just check that the appropriate methods are called
+    mocker.patch("tkinter.Tk")
+    filedialog_patch = mocker.patch("tkinter.filedialog.askopenfilename")
+    mocker.patch("idaqpy.interface.process_log_files")
+
+    result = RUNNER.invoke(idaq_cli, ["single"])
+    check.equal(result.exit_code, 0)
+    check.is_true(filedialog_patch.called)
+
+
+def test_batch_ui_prompt(mocker: MockFixture) -> None:
+    """Test that a bare invocation of the batch processing prompts user for directory selection."""
+    # Mock TkInter & processing flow so we can just check that the appropriate methods are called
+    mocker.patch("tkinter.Tk")
+    filedialog_patch = mocker.patch("tkinter.filedialog.askdirectory")
+    mocker.patch("idaqpy.interface.process_log_files")
+
+    result = RUNNER.invoke(idaq_cli, ["batch"])
+    check.equal(result.exit_code, 0)
+    check.is_true(filedialog_patch.called)
+
+
 @pytest.mark.skip(reason="Test not implemented")
 def test_single_file_entry(mocker: MockFixture) -> None:
     """Test UI flow for single file processing."""
